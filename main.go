@@ -1,6 +1,7 @@
 package main
 
 import (
+	"maks-go/config"
 	"maks-go/database"
 	"maks-go/database/migration"
 	"maks-go/route"
@@ -13,6 +14,7 @@ func main() {
 	migration.RunMigration()
 
 	app := fiber.New()
+	config.GoogleConfig()
 
 	route.RouteInit(app)
 

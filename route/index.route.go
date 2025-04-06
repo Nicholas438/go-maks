@@ -7,5 +7,7 @@ import (
 )
 
 func RouteInit(r *fiber.App) {
-	r.Get("/", handler.UserHandler)
+	r.Get("/google-login", handler.GoogleLogin)
+	r.Get("/google-callback", handler.GoogleCallback)
+	r.Static("/", "./public")
 }

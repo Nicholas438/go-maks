@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>OAuth Success</title>
+</head>
+<body>
+  <h1>OAuth Login Success</h1>
+  <p id="token-display">Fetching token...</p>
+
+  <script>
+    const urlParams = new URLSearchParams(window.location.search);
+    const token = urlParams.get("token");
+
+    if (token) {
+      document.getElementById("token-display").innerText = `JWT: ${token}`;
+      // Optionally: localStorage.setItem("auth_token", token);
+    } else {
+      document.getElementById("token-display").innerText = "No token found.";
+    }
+  </script>
+</body>
+</html>

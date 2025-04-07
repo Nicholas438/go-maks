@@ -8,4 +8,6 @@ import (
 
 func RouteInit(r *fiber.App) {
 	r.Get("/bulk-trades-read", handler.DataHandlerGetAll)
+	r.Post("/coin", handler.CoinHandlerCreate)
+	r.Get("/coin", handler.CoinHandlerGetAll)
 }

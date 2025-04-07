@@ -1,16 +1,21 @@
 package database
 
 import (
+	"context"
+	"crypto/tls"
 	"fmt"
 	"log"
 	"os"
 
 	"github.com/joho/godotenv"
+	"github.com/redis/go-redis/v9"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
 
 var DB *gorm.DB
+var rdb *redis.Client
+var ctx = context.Background()
 
 func DatabaseInit() {
 	var err error
@@ -34,4 +39,19 @@ func DatabaseInit() {
 
 	log.Println("Connected to Aiven PostgreSQL successfully!")
 
+	rdb = redis.NewClient(&redis.Options{
+		Addr:     os.Getenv("VALKEY_ADDR"),
+		Password: os.Getenv("VALKEY_PASSWORD"),
+		DB:       0,
+		TLSConfig: &tls.Config{
+			InsecureSkipVerify: false,
+		},
+	})
+
+	// Test Redis connection
+	pong, err := rdb.Ping(ctx).Result()
+	if err != nil {
+		log.Fatalf("Failed to connect to Valkey: %v", err)
+	}
+	fmt.Println("Connected to Valkey:", pong)
 }

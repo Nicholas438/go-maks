@@ -1,4 +1,4 @@
-module your-module-name
+module trade_service
 
 go 1.24.2
 

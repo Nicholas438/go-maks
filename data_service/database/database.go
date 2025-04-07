@@ -14,8 +14,8 @@ import (
 )
 
 var DB *gorm.DB
-var rdb *redis.Client
-var ctx = context.Background()
+var Rdb *redis.Client
+var Ctx = context.Background()
 
 func DatabaseInit() {
 	var err error
@@ -39,7 +39,7 @@ func DatabaseInit() {
 
 	log.Println("Connected to Aiven PostgreSQL successfully!")
 
-	rdb = redis.NewClient(&redis.Options{
+	Rdb = redis.NewClient(&redis.Options{
 		Addr:     os.Getenv("VALKEY_ADDR"),
 		Password: os.Getenv("VALKEY_PASSWORD"),
 		DB:       0,
@@ -49,7 +49,7 @@ func DatabaseInit() {
 	})
 
 	// Test Redis connection
-	pong, err := rdb.Ping(ctx).Result()
+	pong, err := Rdb.Ping(Ctx).Result()
 	if err != nil {
 		log.Fatalf("Failed to connect to Valkey: %v", err)
 	}

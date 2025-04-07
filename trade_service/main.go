@@ -1,10 +1,9 @@
 package main
 
 import (
-	"auth_service/config"
-	"auth_service/database"
-	"auth_service/database/migration"
-	"auth_service/route"
+	"trade_service/database"
+	"trade_service/database/migration"
+	"trade_service/route"
 
 	"github.com/gofiber/fiber/v2"
 )
@@ -14,9 +13,8 @@ func main() {
 	migration.RunMigration()
 
 	app := fiber.New()
-	config.GoogleConfig()
 
 	route.RouteInit(app)
 
-	app.Listen(":3000")
+	app.Listen(":3002")
 }

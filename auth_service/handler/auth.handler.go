@@ -10,10 +10,11 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"strings"
 	"time"
 
-	"github.com/dgrijalva/jwt-go/v4"
 	"github.com/gofiber/fiber/v2"
+	"github.com/golang-jwt/jwt/v4"
 )
 
 func GoogleLogin(c *fiber.Ctx) error {
@@ -72,8 +73,7 @@ func GoogleCallback(c *fiber.Ctx) error {
 
 	// Generate JWT
 	claims := jwt.MapClaims{}
-	claims["name"] = user.Name
-	claims["email"] = user.Email
+	claims["id"] = user.ID
 	claims["exp"] = time.Now().Add(time.Hour * 2).Unix()
 
 	jwtToken, errGenerateToken := utils.GenerateToken(&claims)
@@ -97,4 +97,30 @@ func RegisterUser(name, email string) (*entity.User, error) {
 		return nil, err
 	}
 	return user, nil
+}
+
+func AuthorizeUser(c *fiber.Ctx) error {
+	authHeader := c.Get("Authorization")
+	if authHeader == "" {
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "Missing token"})
+	}
+
+	tokenStr := strings.TrimPrefix(authHeader, "Bearer ")
+
+	claims, err := utils.DecodeToken(tokenStr)
+	if err != nil {
+		if err.Error() == "token is expired" {
+			return c.Status(401).JSON(fiber.Map{
+				"message": "Token has expired",
+			})
+		}
+		log.Println(err)
+		return c.Status(500).JSON(fiber.Map{
+			"message": "Failed to decode JWT",
+		})
+	}
+
+	userID := claims["id"].(float64)
+
+	return c.JSON(fiber.Map{"user_id": userID})
 }

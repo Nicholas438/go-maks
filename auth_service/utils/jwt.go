@@ -3,7 +3,7 @@ package utils
 import (
 	"fmt"
 
-	"github.com/dgrijalva/jwt-go/v4"
+	"github.com/golang-jwt/jwt/v4"
 )
 
 var SecretKey = "SECRET_TOKEN"
@@ -28,6 +28,12 @@ func VerifyToken(tokenString string) (*jwt.Token, error) {
 	})
 
 	if err != nil {
+		// Check if it's a validation error and specifically an expired token
+		if ve, ok := err.(*jwt.ValidationError); ok {
+			if ve.Errors&jwt.ValidationErrorExpired != 0 {
+				return nil, fmt.Errorf("token is expired")
+			}
+		}
 		return nil, err
 	}
 
@@ -45,5 +51,5 @@ func DecodeToken(tokenString string) (jwt.MapClaims, error) {
 		return claims, nil
 	}
 
-	return nil, fmt.Errorf("invalid token")
+	return nil, fmt.Errorf("Invalid token")
 }

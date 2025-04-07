@@ -1,14 +1,14 @@
 package migration
 
 import (
-	"auth_service/database"
-	"auth_service/model/entity"
 	"fmt"
 	"log"
+	"trade_service/database"
+	"trade_service/model/entity"
 )
 
 func RunMigration() {
-	err := database.DB.AutoMigrate(&entity.User{})
+	err := database.DB.AutoMigrate(&entity.Trades{})
 	if err != nil {
 		log.Println(err)
 	}

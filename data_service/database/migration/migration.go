@@ -1,8 +1,8 @@
 package migration
 
 import (
-	"auth_service/database"
-	"auth_service/model/entity"
+	"data_service/database"
+	"data_service/model/entity"
 	"fmt"
 	"log"
 )

@@ -18,9 +18,29 @@ func DataHandlerGetAll(ctx *fiber.Ctx) error {
 	if result.Error != nil {
 		log.Println(result.Error)
 	}
-	return ctx.JSON(
-		trades,
-	)
+	return ctx.Status(200).JSON(fiber.Map{
+		"message": "Success",
+		"data":    trades,
+	})
+}
+
+func DataHandlerGetByCoinId(ctx *fiber.Ctx) error {
+	coinID := ctx.Params("coin_id")
+
+	var trades []entity.Trades
+
+	result := database.DB.Raw("SELECT * FROM trades WHERE coin_id = ?", coinID).Scan(&trades)
+	if result.Error != nil {
+		return ctx.Status(500).JSON(fiber.Map{
+			"message": "Trades query failed",
+			"error":   result.Error,
+		})
+	}
+
+	return ctx.Status(200).JSON(fiber.Map{
+		"message": "Success",
+		"data":    trades,
+	})
 }
 
 func GenerateAndStoreRandomData() {

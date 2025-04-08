@@ -3,12 +3,14 @@ package handler
 import (
 	"data_service/database"
 	"data_service/model/entity"
+	"data_service/model/request"
 	"fmt"
 	"log"
 	"math/rand"
 	"strconv"
 	"time"
 
+	"github.com/go-playground/validator/v10"
 	"github.com/gofiber/fiber/v2"
 	"github.com/redis/go-redis/v9"
 )
@@ -44,6 +46,39 @@ func DataHandlerGetByCoinId(ctx *fiber.Ctx) error {
 	})
 }
 
+func CoinHandlerCreate(ctx *fiber.Ctx) error {
+	coin := new(request.CoinCreateRequest)
+	if err := ctx.BodyParser(coin); err != nil {
+		return err
+	}
+
+	validate := validator.New()
+	errValidate := validate.Struct(coin)
+
+	if errValidate != nil {
+		return ctx.Status(400).JSON(fiber.Map{
+			"message": "failed",
+			"error":   errValidate.Error(),
+		})
+	}
+
+	newCoin := entity.Coin{
+		Name: coin.Name,
+	}
+
+	errCreateCoin := database.DB.Create(&newCoin).Error
+	if errCreateCoin != nil {
+		return ctx.Status(500).JSON(fiber.Map{
+			"message": "Failed to store data",
+		})
+	}
+
+	return ctx.JSON(fiber.Map{
+		"message": "success",
+		"data":    newCoin,
+	})
+}
+
 func GenerateAndStoreRandomData() {
 	var coins []entity.Coin
 	err := database.DB.Find(&coins).Error
@@ -72,7 +107,7 @@ func GenerateAndStoreRandomData() {
 			UpdateLowestData()
 		}
 		if time.Since(parsedTime) > 24*time.Hour {
-			log.Println("ITime passed while generating data")
+			log.Println("Time passed while generating data")
 			FindLowestData()
 		}
 

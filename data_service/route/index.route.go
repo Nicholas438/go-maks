@@ -9,4 +9,6 @@ import (
 func RouteInit(r *fiber.App) {
 	r.Get("/bulk-trades-read", handler.DataHandlerGetAll)
 	r.Get("/trades-filter-coin-id/:coin_id", handler.DataHandlerGetByCoinId)
+
+	r.Post("/create-coin", handler.CoinHandlerCreate)
 }

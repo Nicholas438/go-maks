@@ -4,6 +4,7 @@ import (
 	"auth_service/config"
 	"auth_service/database"
 	"auth_service/model/entity"
+	"auth_service/model/request"
 	"auth_service/utils"
 	"context"
 	"encoding/json"
@@ -13,9 +14,22 @@ import (
 	"strings"
 	"time"
 
+	"github.com/go-playground/validator/v10"
 	"github.com/gofiber/fiber/v2"
 	"github.com/golang-jwt/jwt/v4"
 )
+
+func UserHandlerGetAll(ctx *fiber.Ctx) error {
+	var trades []entity.User
+	result := database.DB.Raw("SELECT * FROM users").Scan(&trades)
+	if result.Error != nil {
+		log.Println(result.Error)
+	}
+	return ctx.Status(200).JSON(fiber.Map{
+		"message": "Success",
+		"data":    trades,
+	})
+}
 
 func GoogleLogin(c *fiber.Ctx) error {
 
@@ -62,7 +76,7 @@ func GoogleCallback(c *fiber.Ctx) error {
 
 	registered := database.DB.First(&user, "email = ?", email).Error
 	if registered != nil {
-		newUser, err := RegisterUser(name, email)
+		newUser, err := RegisterUserGoogle(name, email)
 		if err != nil {
 			return c.Status(500).JSON(fiber.Map{
 				"message": "Failed to store user",
@@ -87,7 +101,109 @@ func GoogleCallback(c *fiber.Ctx) error {
 	return c.Redirect("http://localhost:3000/dummy_success_page.html?token=" + jwtToken)
 }
 
-func RegisterUser(name, email string) (*entity.User, error) {
+func LoginAuth(ctx *fiber.Ctx) error {
+	loginRequest := new(request.LoginRequest)
+
+	if err := ctx.BodyParser(loginRequest); err != nil {
+		return err
+	}
+
+	validate := validator.New()
+	errValidate := validate.Struct(loginRequest)
+
+	if errValidate != nil {
+		return ctx.Status(400).JSON(fiber.Map{
+			"message": "failed",
+			"error":   errValidate.Error(),
+		})
+	}
+
+	var user entity.User
+
+	err := database.DB.First(&user, "email = ?", loginRequest.Email).Error
+	if err != nil {
+		return ctx.Status(400).JSON(fiber.Map{
+			"message": "User not found",
+		})
+	}
+
+	isValid := utils.CheckPasswordHash(loginRequest.Password, user.Password)
+
+	if !isValid {
+		return ctx.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+			"message": "Wrong pass",
+		})
+	}
+
+	claims := jwt.MapClaims{}
+	claims["id"] = user.ID
+	claims["exp"] = time.Now().Add(time.Hour * 2).Unix()
+
+	jwtToken, errGenerateToken := utils.GenerateToken(&claims)
+	if errGenerateToken != nil {
+		log.Println(errGenerateToken)
+		return ctx.Status(500).JSON(fiber.Map{
+			"message": "Failed to create JWT",
+		})
+	}
+
+	return ctx.JSON(fiber.Map{
+		"access_token": jwtToken,
+	})
+}
+
+func RegisterAuth(ctx *fiber.Ctx) error {
+	user := new(request.UserCreateRequest)
+	if err := ctx.BodyParser(user); err != nil {
+		return err
+	}
+
+	validate := validator.New()
+	errValidate := validate.Struct(user)
+
+	if errValidate != nil {
+		return ctx.Status(400).JSON(fiber.Map{
+			"message": "failed",
+			"error":   errValidate.Error(),
+		})
+	}
+
+	var userEmail entity.User
+	result := database.DB.First(&userEmail, "email = ?", user.Email)
+	if result.Error == nil {
+		return ctx.Status(400).JSON(fiber.Map{
+			"message": "Email already registered",
+		})
+	}
+
+	newUser := entity.User{
+		Email:    user.Email,
+		Password: user.Password,
+	}
+
+	hashedPassword, err := utils.HashingPassword(user.Password)
+	if err != nil {
+		log.Println(err)
+		return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"message": "Internal Server Error",
+		})
+	}
+	newUser.Password = hashedPassword
+
+	errCreateUser := database.DB.Create(&newUser).Error
+	if errCreateUser != nil {
+		return ctx.Status(500).JSON(fiber.Map{
+			"message": "failed to store data",
+		})
+	}
+
+	return ctx.JSON(fiber.Map{
+		"message": "success",
+		"data":    newUser,
+	})
+}
+
+func RegisterUserGoogle(name, email string) (*entity.User, error) {
 	user := &entity.User{
 		Name:  name,
 		Email: email,

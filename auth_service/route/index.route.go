@@ -10,5 +10,8 @@ func RouteInit(r *fiber.App) {
 	r.Get("/google-login", handler.GoogleLogin)
 	r.Get("/google-callback", handler.GoogleCallback)
 	r.Post("/auth", handler.AuthorizeUser)
+	r.Post("/login", handler.LoginAuth)
+	r.Post("/register", handler.RegisterAuth)
+	r.Get("/get-bulk", handler.UserHandlerGetAll)
 	r.Static("/", "./public")
 }

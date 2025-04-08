@@ -19,18 +19,6 @@ import (
 	"github.com/golang-jwt/jwt/v4"
 )
 
-func UserHandlerGetAll(ctx *fiber.Ctx) error {
-	var trades []entity.User
-	result := database.DB.Raw("SELECT * FROM users").Scan(&trades)
-	if result.Error != nil {
-		log.Println(result.Error)
-	}
-	return ctx.Status(200).JSON(fiber.Map{
-		"message": "Success",
-		"data":    trades,
-	})
-}
-
 func GoogleLogin(c *fiber.Ctx) error {
 
 	url := config.AppConfig.GoogleLoginConfig.AuthCodeURL("randomstate")

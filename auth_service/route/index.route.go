@@ -12,6 +12,5 @@ func RouteInit(r *fiber.App) {
 	r.Post("/auth", handler.AuthorizeUser)
 	r.Post("/login", handler.LoginAuth)
 	r.Post("/register", handler.RegisterAuth)
-	r.Get("/get-bulk", handler.UserHandlerGetAll)
 	r.Static("/", "./public")
 }

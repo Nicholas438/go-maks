@@ -92,5 +92,6 @@ air
 - `GET /bulk-trades-read` – Get all trade data
 - `GET /trades-filter-coin-id/:coin_id` – Read filtered data based on coin id
 - `POST /create-coin` – Creates a new coin from coin name (receives coin_name)
+
 💱 Trade Service
 - `POST /trade` – Create trade (requires Bearer token) (receives price and coin_id)

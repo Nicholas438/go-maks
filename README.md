@@ -81,9 +81,9 @@ air
 # 🧪 API Endpoints
 
 🔐 Auth Service
-- `POST /login` – User login and JWT generation
-- `POST /register` – Register a new user
-- `POST /auth` – Validate JWT and return user ID
+- `POST /login` – User login and JWT generation (Receives email and password as input)
+- `POST /register` – Register a new user (Receives email and password as input)
+- `POST /auth` – Validate JWT and return user ID (receives token from bearer authorization header)
 - `GET /google-login` – Initiate Google OAuth login
 - `GET /google-callback` – Google OAuth callback handler
 
@@ -91,6 +91,7 @@ air
 📊 Data Service
 - `GET /bulk-trades-read` – Get all trade data
 - `GET /trades-filter-coin-id/:coin_id` – Read filtered data based on coin id
-- `POST /create-coin` – Creates a new coin from coin name
+- `POST /create-coin` – Creates a new coin from coin name (receives coin_name)
+
 💱 Trade Service
-- `POST /trade` – Create trade (requires Bearer token)
+- `POST /trade` – Create trade (requires Bearer token) (receives price and coin_id)

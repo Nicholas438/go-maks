@@ -21,8 +21,8 @@ func TradeHandlerCreate(ctx *fiber.Ctx) error {
 
 	validate := validator.New()
 	errValidate := validate.Struct(trade)
-	lowestDataRedis := GetLowestData()
-	if trade.Price < (0.5 * lowestDataRedis) {
+	lowestPriceRedis := GetLowestData()
+	if trade.Price < (0.5 * lowestPriceRedis) {
 		return ctx.Status(400).JSON(fiber.Map{
 			"message": "Cannot trade lower than half of lowest trade price in the past 24 hours",
 		})
@@ -55,8 +55,7 @@ func TradeHandlerCreate(ctx *fiber.Ctx) error {
 			"message": "failed to create trade",
 		})
 	}
-
-	if trade.Price < lowestDataRedis {
+	if trade.Price < lowestPriceRedis {
 		SetLowestData(trade.Price, time.Now().Format(time.RFC3339))
 	}
 

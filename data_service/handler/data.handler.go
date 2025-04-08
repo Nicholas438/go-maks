@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"math/rand"
+	"strconv"
 	"time"
 
 	"github.com/gofiber/fiber/v2"
@@ -60,6 +61,21 @@ func GenerateAndStoreRandomData() {
 			CoinID: coin.ID,
 		}
 
+		lowestPriceRedis, timeStrRedis := GetLowestData()
+		if trade.Price < lowestPriceRedis {
+			SetLowestData(trade.Price, time.Now().Format(time.RFC3339))
+		}
+
+		parsedTime, err := time.Parse(time.RFC3339, timeStrRedis)
+		if err != nil {
+			log.Println("Invalid time format in Redis:", err)
+			UpdateLowestData()
+		}
+		if time.Since(parsedTime) > 24*time.Hour {
+			log.Println("ITime passed while generating data")
+			FindLowestData()
+		}
+
 		errGenerateTrade := database.DB.Create(&trade).Error
 		if errGenerateTrade != nil {
 			log.Println("Failed to store random trade:", errGenerateTrade)
@@ -68,10 +84,11 @@ func GenerateAndStoreRandomData() {
 
 }
 
-func GetLowestData() {
+func UpdateLowestData() {
 	timeStr, err := database.Rdb.Get(database.Ctx, "lowest_price_24_hrs_time").Result()
 	if err == redis.Nil {
-		SetLowestData()
+		log.Println("No data")
+		FindLowestData()
 	}
 	if err != nil {
 		log.Println("Failed to get Redis key:", err)
@@ -83,12 +100,13 @@ func GetLowestData() {
 		log.Println("Invalid time value:", err)
 	}
 	if time.Since(timeRes) > 24*time.Hour {
-		SetLowestData()
+		log.Println("Time passed while updating data")
+		FindLowestData()
 	}
 
 }
 
-func SetLowestData() {
+func FindLowestData() {
 	var lowest entity.Trades
 	err := database.DB.Raw("SELECT price, created_at FROM trades WHERE created_at >= NOW() - INTERVAL '24 HOURS' ORDER BY price ASC LIMIT 1;").Scan(&lowest)
 	if err != nil {
@@ -101,6 +119,43 @@ func SetLowestData() {
 	}
 
 	errRedis = database.Rdb.Set(database.Ctx, "lowest_price_24_hrs_time", lowest.CreatedAt.Format(time.RFC3339), 0).Err()
+	if errRedis != nil {
+		log.Println("Failed to store timestamp:", errRedis)
+	}
+
+	log.Println("Lowest price and time stored in Redis")
+}
+
+func GetLowestData() (float64, string) {
+	price, err := database.Rdb.Get(database.Ctx, "lowest_price_24_hrs").Result()
+	if err == redis.Nil {
+		log.Println("No trade info")
+		return 0, ""
+	}
+	if err != nil {
+		log.Println("Failed to get Redis key:", err)
+	}
+
+	timeRes, err := database.Rdb.Get(database.Ctx, "lowest_price_24_hrs_time").Result()
+	if err != nil {
+		log.Println("Failed to get Redis key:", err)
+	}
+
+	fprice, err := strconv.ParseFloat(price, 64)
+	if err != nil {
+		log.Println("Conversion failed:", err)
+	}
+	return fprice, timeRes
+
+}
+
+func SetLowestData(price float64, createdAt string) {
+	errRedis := database.Rdb.Set(database.Ctx, "lowest_price_24_hrs", price, 0).Err()
+	if errRedis != nil {
+		log.Println("Failed to store lowest price:", errRedis)
+	}
+
+	errRedis = database.Rdb.Set(database.Ctx, "lowest_price_24_hrs_time", createdAt, 0).Err()
 	if errRedis != nil {
 		log.Println("Failed to store timestamp:", errRedis)
 	}

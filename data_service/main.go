@@ -24,7 +24,7 @@ func main() {
 }
 
 func startDataGeneration() {
-	handler.GetLowestData()
+	handler.UpdateLowestData()
 	ticker := time.NewTicker(1 * time.Minute)
 	defer ticker.Stop()
 
@@ -32,7 +32,7 @@ func startDataGeneration() {
 		select {
 		case <-ticker.C:
 			handler.GenerateAndStoreRandomData()
-			handler.GetLowestData()
+			handler.UpdateLowestData()
 		}
 	}
 }

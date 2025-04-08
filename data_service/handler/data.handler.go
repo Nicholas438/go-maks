@@ -32,7 +32,7 @@ func GenerateAndStoreRandomData() {
 	fmt.Println(coins)
 
 	for _, coin := range coins {
-		price := rand.Intn(1000) + 1000
+		price := rand.Float64()*1000 + 1000
 
 		trade := entity.Trades{
 			Price:  price,
@@ -77,12 +77,12 @@ func SetLowestData() {
 
 	errRedis := database.Rdb.Set(database.Ctx, "lowest_price_24_hrs", lowest.Price, 0).Err()
 	if errRedis != nil {
-		log.Println("Failed to store lowest price:", err)
+		log.Println("Failed to store lowest price:", errRedis)
 	}
 
 	errRedis = database.Rdb.Set(database.Ctx, "lowest_price_24_hrs_time", lowest.CreatedAt.Format(time.RFC3339), 0).Err()
 	if errRedis != nil {
-		log.Println("Failed to store timestamp:", err)
+		log.Println("Failed to store timestamp:", errRedis)
 	}
 
 	log.Println("Lowest price and time stored in Redis")

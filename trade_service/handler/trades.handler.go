@@ -14,24 +14,26 @@ import (
 )
 
 func TradeHandlerCreate(ctx *fiber.Ctx) error {
-	trade := new(request.TradeCreateRequest)
-	if err := ctx.BodyParser(trade); err != nil {
-		return err
+	var trade request.TradeCreateRequest
+	if err := ctx.BodyParser(&trade); err != nil {
+		return ctx.Status(400).JSON(fiber.Map{
+			"message": "Invalid request body",
+			"error":   err.Error(),
+		})
 	}
 
 	validate := validator.New()
-	errValidate := validate.Struct(trade)
+	if err := validate.Struct(trade); err != nil {
+		return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"message": "Validation failed",
+			"error":   err.Error(),
+		})
+	}
+
 	lowestPriceRedis := GetLowestData()
 	if trade.Price < (0.5 * lowestPriceRedis) {
 		return ctx.Status(400).JSON(fiber.Map{
 			"message": "Cannot trade lower than half of lowest trade price in the past 24 hours",
-		})
-	}
-
-	if errValidate != nil {
-		return ctx.Status(400).JSON(fiber.Map{
-			"message": "failed Trade ",
-			"error":   errValidate.Error(),
 		})
 	}
 

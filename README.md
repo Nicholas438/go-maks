@@ -56,7 +56,7 @@ go mod tidy
 ```
 🔁 Install Air for Hot Reloading
 ```bash
-go install github.com/cosmtrek/air@latest
+go install github.com/air-verse/air@latest
 ```
 Make sure $GOPATH/bin is in your system $PATH.
 

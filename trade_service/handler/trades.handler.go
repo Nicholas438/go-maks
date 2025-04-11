@@ -11,7 +11,33 @@ import (
 	"github.com/go-playground/validator/v10"
 	"github.com/gofiber/fiber/v2"
 	"github.com/redis/go-redis/v9"
+	"gorm.io/gorm"
 )
+
+func TradesHandlerGet(ctx *fiber.Ctx) error {
+	coinID := ctx.Query("coin_id")
+	var trades []entity.Trades
+	var result *gorm.DB
+
+	if coinID == "" {
+		result = database.DB.Raw("SELECT * FROM trades").Scan(&trades)
+
+	} else {
+		result = database.DB.Raw("SELECT * FROM trades WHERE coin_id = ?", coinID).Scan(&trades)
+	}
+
+	if result.Error != nil {
+		return ctx.Status(500).JSON(fiber.Map{
+			"message": "Trades query failed",
+			"error":   result.Error,
+		})
+	}
+
+	return ctx.Status(200).JSON(fiber.Map{
+		"message": "Success",
+		"data":    trades,
+	})
+}
 
 func TradeHandlerCreate(ctx *fiber.Ctx) error {
 	var trade request.TradeCreateRequest

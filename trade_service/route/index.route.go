@@ -8,5 +8,7 @@ import (
 )
 
 func RouteInit(r *fiber.App) {
+	r.Get("/trade", middleware.AuthMiddleware(), handler.TradesHandlerGet)
+
 	r.Post("/trade", middleware.AuthMiddleware(), handler.TradeHandlerCreate)
 }

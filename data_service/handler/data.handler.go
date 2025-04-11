@@ -15,34 +15,11 @@ import (
 	"github.com/redis/go-redis/v9"
 )
 
-func DataHandlerGetAll(ctx *fiber.Ctx) error {
-	var trades []entity.Trades
-	result := database.DB.Raw("SELECT * FROM trades").Scan(&trades)
-	if result.Error != nil {
-		log.Println(result.Error)
-	}
+func GetLowestTrade(ctx *fiber.Ctx) error {
+	price, time := GetLowestData()
 	return ctx.Status(200).JSON(fiber.Map{
-		"message": "Success",
-		"data":    trades,
-	})
-}
-
-func DataHandlerGetByCoinId(ctx *fiber.Ctx) error {
-	coinID := ctx.Params("coin_id")
-
-	var trades []entity.Trades
-
-	result := database.DB.Raw("SELECT * FROM trades WHERE coin_id = ?", coinID).Scan(&trades)
-	if result.Error != nil {
-		return ctx.Status(500).JSON(fiber.Map{
-			"message": "Trades query failed",
-			"error":   result.Error,
-		})
-	}
-
-	return ctx.Status(200).JSON(fiber.Map{
-		"message": "Success",
-		"data":    trades,
+		"price":         price,
+		"time_recorded": time,
 	})
 }
 

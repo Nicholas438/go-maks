@@ -49,6 +49,25 @@ func AveragePriceHandler(ctx *fiber.Ctx) error {
 	})
 }
 
+func CoinHandlerGet(ctx *fiber.Ctx) error {
+	var coins []entity.Coin
+	var result *gorm.DB
+
+	result = database.DB.Raw("SELECT * FROM coins").Scan(&coins)
+
+	if result.Error != nil {
+		return ctx.Status(500).JSON(fiber.Map{
+			"message": "Coin query failed",
+			"error":   result.Error,
+		})
+	}
+
+	return ctx.Status(200).JSON(fiber.Map{
+		"message": "Success",
+		"data":    coins,
+	})
+}
+
 func CoinHandlerCreate(ctx *fiber.Ctx) error {
 	coin := new(request.CoinCreateRequest)
 	if err := ctx.BodyParser(coin); err != nil {

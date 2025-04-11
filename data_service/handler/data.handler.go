@@ -13,13 +13,39 @@ import (
 	"github.com/go-playground/validator/v10"
 	"github.com/gofiber/fiber/v2"
 	"github.com/redis/go-redis/v9"
+	"gorm.io/gorm"
 )
 
-func GetLowestTrade(ctx *fiber.Ctx) error {
+func LowestTradeHandler(ctx *fiber.Ctx) error {
 	price, time := GetLowestData()
 	return ctx.Status(200).JSON(fiber.Map{
 		"price":         price,
 		"time_recorded": time,
+	})
+}
+
+func AveragePriceHandler(ctx *fiber.Ctx) error {
+	coinID := ctx.Query("coin_id")
+	var price float64
+	var result *gorm.DB
+
+	if coinID == "" {
+		result = database.DB.Raw("SELECT AVG(price) FROM trades WHERE created_at >= NOW() - INTERVAL '24 HOURS'").Scan(&price)
+
+	} else {
+		result = database.DB.Raw("SELECT AVG(price) FROM trades WHERE created_at >= NOW() - INTERVAL '24 HOURS' AND coin_id=?", coinID).Scan(&price)
+	}
+
+	if result.Error != nil {
+		return ctx.Status(500).JSON(fiber.Map{
+			"message": "Trades query failed",
+			"error":   result.Error,
+		})
+	}
+
+	return ctx.Status(200).JSON(fiber.Map{
+		"message": "Success",
+		"data":    price,
 	})
 }
 

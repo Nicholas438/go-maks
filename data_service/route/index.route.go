@@ -7,6 +7,7 @@ import (
 )
 
 func RouteInit(r *fiber.App) {
-	r.Get("/data/lowest-trade", handler.GetLowestTrade)
+	r.Get("/data/lowest-trade", handler.LowestTradeHandler)
+	r.Get("/data/average-price", handler.AveragePriceHandler)
 	r.Post("/coin/create", handler.CoinHandlerCreate)
 }

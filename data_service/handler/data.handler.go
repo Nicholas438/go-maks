@@ -49,25 +49,6 @@ func AveragePriceHandler(ctx *fiber.Ctx) error {
 	})
 }
 
-func CoinHandlerGet(ctx *fiber.Ctx) error {
-	var coins []entity.Coin
-	var result *gorm.DB
-
-	result = database.DB.Raw("SELECT * FROM coins").Scan(&coins)
-
-	if result.Error != nil {
-		return ctx.Status(500).JSON(fiber.Map{
-			"message": "Coin query failed",
-			"error":   result.Error,
-		})
-	}
-
-	return ctx.Status(200).JSON(fiber.Map{
-		"message": "Success",
-		"data":    coins,
-	})
-}
-
 func CoinHandlerCreate(ctx *fiber.Ctx) error {
 	coin := new(request.CoinCreateRequest)
 	if err := ctx.BodyParser(coin); err != nil {
@@ -98,6 +79,114 @@ func CoinHandlerCreate(ctx *fiber.Ctx) error {
 	return ctx.JSON(fiber.Map{
 		"message": "success",
 		"data":    newCoin,
+	})
+}
+
+func RSICalculator(ctx *fiber.Ctx) error {
+	coinIDQuery := ctx.Query("coin_id")
+	periodQuery := ctx.Query("period", "14")
+	var price []float64
+	var result *gorm.DB
+
+	coinID, err := strconv.Atoi(coinIDQuery)
+	if err != nil {
+		return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid coin_id"})
+	}
+	period, err := strconv.Atoi(periodQuery)
+	if err != nil {
+		return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid period"})
+	}
+
+	result = database.DB.Raw("SELECT price FROM trades WHERE coin_id = ? ORDER BY created_at ASC", coinID).Scan(&price)
+
+	if result.Error != nil {
+		return ctx.Status(500).JSON(fiber.Map{
+			"message": "Trades query failed",
+			"error":   result.Error,
+		})
+	}
+
+	rsi, err := CalculateRSI(price, period)
+	if err != nil {
+		return ctx.Status(500).JSON(fiber.Map{"error": "RSI Calculation failed"})
+	}
+
+	return ctx.Status(200).JSON(fiber.Map{
+		"message": "Success",
+		"rsi":     rsi[len(rsi)-1],
+		"coin_id": coinID,
+		"period":  period,
+	})
+}
+
+func CalculateRSI(prices []float64, period int) ([]float64, error) {
+	if len(prices) <= period {
+		return nil, fmt.Errorf("not enough data to calculate RSI (need more than %d points)", period)
+	}
+
+	rsi := make([]float64, len(prices))
+	gains := 0.0
+	losses := 0.0
+
+	// Initial average gain/loss
+	for i := 1; i <= period; i++ {
+		change := prices[i] - prices[i-1]
+		if change > 0 {
+			gains += change
+		} else {
+			losses -= change // subtract negative to get positive loss
+		}
+	}
+
+	avgGain := gains / float64(period)
+	avgLoss := losses / float64(period)
+
+	// First RSI value
+	rs := avgGain / avgLoss
+	rsi[period] = 100 - (100 / (1 + rs))
+
+	// Continue smoothing RSI
+	for i := period + 1; i < len(prices); i++ {
+		change := prices[i] - prices[i-1]
+		var gain, loss float64
+
+		if change > 0 {
+			gain = change
+			loss = 0
+		} else {
+			gain = 0
+			loss = -change
+		}
+
+		avgGain = ((avgGain * float64(period-1)) + gain) / float64(period)
+		avgLoss = ((avgLoss * float64(period-1)) + loss) / float64(period)
+
+		if avgLoss == 0 {
+			rsi[i] = 100
+		} else {
+			rs = avgGain / avgLoss
+			rsi[i] = 100 - (100 / (1 + rs))
+		}
+	}
+
+	return rsi, nil
+}
+
+func CoinHandlerGet(ctx *fiber.Ctx) error {
+	var coins []entity.Coin
+
+	result := database.DB.Raw("SELECT * FROM coins").Scan(&coins)
+
+	if result.Error != nil {
+		return ctx.Status(500).JSON(fiber.Map{
+			"message": "Coin query failed",
+			"error":   result.Error,
+		})
+	}
+
+	return ctx.Status(200).JSON(fiber.Map{
+		"message": "Success",
+		"data":    coins,
 	})
 }
 
